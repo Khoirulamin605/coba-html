@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator</title>
+    <style>
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th {
+            font-size: 12pt;
+            background-color: #4e7548;
+            color: white;
+            border: 1px solid rgb(85, 82, 78);
+        }
+
+        tr:hover {
+            background-color: #ddd;
+        }
+
+        td,
+        th {
+            text-align: center;
+            padding: 9px;
+        }
+
+        td {
+            border: 1px solid #899987;
+            font-size: 11pt;
+            font-weight: 200;
+        }
+
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+    </style>
+</head>
+
+<body>
+    <table id="table">
+        <thead>
+            <th> Koin </th>
+            <th> Indodax | IDR </th>
+            <th> Binance | USDT </th>
+            <th> Huobi | USDT </th>
+            <th> Binance | Selisih </th>
+            <th> Huobi | Selisih </th>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</body>
+<script>
+    setTimeout(() => {
+        location.reload();
+    }, 30000)
+    getDataIndodax();
+    async function getDataIndodax() {
+        const urlCoin = 'https://indodax.com/api/pairs';
+        const urlPrice = 'https://indodax.com/api/ticker_all';
+
+        // Get data price indodax
+        await fetch(urlPrice)
+            .then(respPrice => respPrice.json())
+            .then(await function (dataPrice) {
+                localStorage.setItem('idxPrice', JSON.stringify(dataPrice));
+            })
+            .catch(err => console.log('Error Price', err))
+
+        // Get data coin
+        await fetch(urlCoin)
+            .then(resp => resp.json())
+            .then(await function (data) {
+                return data.map(async function (dataParse) {
+                    let pair = dataParse.base_currency;
+                    if (pair === 'idr') {
+                        let coin = dataParse.traded_currency_unit;
+                        let pair = dataParse.base_currency;
+                        let id = dataParse.ticker_id;
+                        let indodaxprice = await idxPriceSearch(id);
+                        let binancePrice = await converttoIDR(await getPrizeBinance(coin));
+                        let huobiPrice = await converttoIDR(await getPrizeHuobi(coin));
+                        let idxBnc = await selisihIdxBncHuobi(indodaxprice, binancePrice);
+                        let idxHb = await selisihIdxBncHuobi(indodaxprice, huobiPrice);
+                        var row = table.insertRow(1);
+                        var cell1 = row.insertCell(0);
+                        var cell2 = row.insertCell(1);
+                        var cell3 = row.insertCell(2);
+                        var cell4 = row.insertCell(3);
+                        var cell5 = row.insertCell(4);
+                        var cell6 = row.insertCell(5);
+                        cell1.innerHTML = coin;
+                        cell2.innerHTML = indodaxprice;
+                        cell3.innerHTML = binancePrice;
+                        cell4.innerHTML = huobiPrice;
+                        cell5.innerHTML = idxBnc + '%';
+                        cell6.innerHTML = idxHb + '%';
+                        if (idxBnc >= 0) {
+                            cell5.style.color = 'green';
+                        } else {
+                            cell5.style.color = 'red';
+                        }
+                        if (idxHb >= 0) {
+                            cell6.style.color = 'green';
+                        } else {
+                            cell6.style.color = 'red';
+                        }
+                    }
+                })
+            })
+            .catch(e => console.log('Request Error', e))
+    }
+
+    async function idxPriceSearch(id) {
+        var allPrice = await JSON.parse(localStorage.getItem('idxPrice'));
+        var dataPrice = await eval('allPrice.tickers.' + id);
+        // console.log(dataPrice)
+        return dataPrice.last;
+    }
+
+    async function getPrizeBinance(symbol) {
+        var pair = symbol + 'USDT';
+        const url = `https://api.binance.com/api/v3/ticker/price?symbol=${pair}`
+        let getLastPrize = await fetch(url)
+            .then((resp) => resp.json())
+            .then(function (data) {
+                // console.log(data.price)
+                let lastPrize = data.price;
+                return lastPrize;
+            }).catch(err => {
+                return 0;
+            })
+        return getLastPrize;
+    }
+    async function getPrizeHuobi(symbol) {
+        var pair = symbol + 'USDT';
+        const url = `https://api.huobi.pro/market/trade?symbol=${pair.toLowerCase()}`
+        let getLastPrize = await fetch(url)
+            .then((resp) => resp.json())
+            .then(function (data) {
+                let lastPrize = data.tick.data[0].price;
+                return lastPrize;
+            }).catch(err => {
+                return 0;
+            })
+        return getLastPrize;
+    }
+    async function converttoIDR(hargaKoin) {
+        var idxCoin = await JSON.parse(localStorage.getItem('idxPrice'));
+        let usdtIdr = idxCoin.tickers.usdt_idr.last;
+        let getIdrPrize = usdtIdr * hargaKoin;
+        return getIdrPrize;
+    }
+    async function selisihIdxBncHuobi(hargaIdx, hargaBncHb) {
+        if (hargaBncHb === 0) {
+            return '-';
+        } else {
+            let selisih = hargaBncHb - hargaIdx;
+            let persen = (selisih / hargaIdx) * 100;
+            return persen.toFixed(1);
+        }
+    }
+</script>
+
+</html>
