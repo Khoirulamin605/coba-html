@@ -4,10 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculator</title>
+    <title>Calculator V1</title>
     <style>
-        table {
+        body {
             font-family: arial, sans-serif;
+        }
+
+        table {
             border-collapse: collapse;
             width: 100%;
         }
@@ -38,13 +41,20 @@
             font-weight: 200;
         }
 
+        .title {
+            text-align: center;
+            color: #4e7548;
+        }
+
         tr:nth-child(even) {
             background-color: #dddddd;
         }
     </style>
+
 </head>
 
 <body>
+    <h3 class="title">Kalkulator Balancer</h3>
     <table id="table">
         <thead>
             <th> Koin </th>
@@ -110,7 +120,6 @@
                 })
             })
             .catch(e => console.log('Request Error', e))
-
         await loadCoin();
     }
 
