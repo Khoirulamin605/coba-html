@@ -4,13 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculator V1</title>
+    <title>Calculator</title>
     <style>
-        body {
-            font-family: arial, sans-serif;
-        }
-
         table {
+            font-family: arial, sans-serif;
             border-collapse: collapse;
             width: 100%;
         }
@@ -34,27 +31,17 @@
 
         td {
             border: 1px solid #899987;
-        }
-
-        span {
             font-size: 11pt;
             font-weight: 200;
-        }
-
-        .title {
-            text-align: center;
-            color: #4e7548;
         }
 
         tr:nth-child(even) {
             background-color: #dddddd;
         }
     </style>
-
 </head>
 
 <body>
-    <h3 class="title">Kalkulator Balancer</h3>
     <table id="table">
         <thead>
             <th> Koin </th>
@@ -69,14 +56,10 @@
     </table>
 </body>
 <script>
+    setTimeout(() => {
+        location.reload();
+    }, 30000)
     getDataIndodax();
-    intervalReload();
-    async function intervalReload() {
-        setTimeout(() => {
-            intervalReload();
-            loadCoin();
-        }, 30000)
-    }
     async function getDataIndodax() {
         const urlCoin = 'https://indodax.com/api/pairs';
         const urlPrice = 'https://indodax.com/api/ticker_all';
@@ -93,16 +76,17 @@
         await fetch(urlCoin)
             .then(resp => resp.json())
             .then(await function (data) {
-                localStorage.setItem('idxCoin', JSON.stringify(data));
                 return data.map(async function (dataParse) {
                     let pair = dataParse.base_currency;
                     if (pair === 'idr') {
                         let coin = dataParse.traded_currency_unit;
-                        let idIdxCoin = coin + 'IDX';
-                        let idBncCoin = coin + 'BNC';
-                        let idHbCoin = coin + 'HB';
-                        let idBncPercen = coin + 'BNC%';
-                        let idHbPercen = coin + 'HB%';
+                        let pair = dataParse.base_currency;
+                        let id = dataParse.ticker_id;
+                        let indodaxprice = await idxPriceSearch(id);
+                        let binancePrice = await converttoIDR(await getPrizeBinance(coin));
+                        let huobiPrice = await converttoIDR(await getPrizeHuobi(coin));
+                        let idxBnc = await selisihIdxBncHuobi(indodaxprice, binancePrice);
+                        let idxHb = await selisihIdxBncHuobi(indodaxprice, huobiPrice);
                         var row = table.insertRow(1);
                         var cell1 = row.insertCell(0);
                         var cell2 = row.insertCell(1);
@@ -110,55 +94,27 @@
                         var cell4 = row.insertCell(3);
                         var cell5 = row.insertCell(4);
                         var cell6 = row.insertCell(5);
-                        cell1.innerHTML = `<span id=${coin}>${coin}</span>`;
-                        cell2.innerHTML = `<span id=${idIdxCoin}>0</span>`;
-                        cell3.innerHTML = `<span id=${idBncCoin}>0</span>`;
-                        cell4.innerHTML = `<span id=${idHbCoin}>0</span>`;
-                        cell5.innerHTML = `<span id=${idBncPercen}>0</span>`;
-                        cell6.innerHTML = `<span id=${idHbPercen}>0</span>`;
+                        cell1.innerHTML = coin;
+                        cell2.innerHTML = indodaxprice;
+                        cell3.innerHTML = binancePrice;
+                        cell4.innerHTML = huobiPrice;
+                        cell5.innerHTML = idxBnc + '%';
+                        cell6.innerHTML = idxHb + '%';
+                        if (idxBnc >= 0) {
+                            cell5.style.color = 'green';
+                        } else {
+                            cell5.style.color = 'red';
+                        }
+                        if (idxHb >= 0) {
+                            cell6.style.color = 'green';
+                        } else {
+                            cell6.style.color = 'red';
+                        }
                     }
                 })
             })
             .catch(e => console.log('Request Error', e))
-        await loadCoin();
     }
-
-    async function loadCoin() {
-        let data = await JSON.parse(localStorage.getItem('idxCoin'));
-        await data.map(async function (dataParse) {
-            let pair = dataParse.base_currency;
-            if (pair === 'idr') {
-                let coin = dataParse.traded_currency_unit;
-                let pair = dataParse.base_currency;
-                let id = dataParse.ticker_id;
-                let indodaxprice = await idxPriceSearch(id);
-                let binancePrice = await converttoIDR(await getPrizeBinance(coin));
-                let huobiPrice = await converttoIDR(await getPrizeHuobi(coin));
-                let idxBnc = await selisihIdxBncHuobi(indodaxprice, binancePrice);
-                let idxHb = await selisihIdxBncHuobi(indodaxprice, huobiPrice);
-
-                document.getElementById(coin + 'IDX').innerHTML = indodaxprice;
-                document.getElementById(coin + 'BNC').innerHTML = binancePrice;
-                document.getElementById(coin + 'HB').innerHTML = huobiPrice;
-                document.getElementById(coin + 'BNC%').innerHTML = idxBnc + '%';
-                document.getElementById(coin + 'HB%').innerHTML = idxBnc + '%';
-
-
-                if (idxBnc >= 0) {
-                    document.getElementById(coin + 'BNC%').style.color = 'green';
-                } else {
-                    document.getElementById(coin + 'BNC%').style.color = 'red';
-                }
-                if (idxHb >= 0) {
-                    document.getElementById(coin + 'HB%').style.color = 'green';
-                } else {
-                    document.getElementById(coin + 'HB%').style.color = 'red';
-                }
-            }
-        })
-    }
-
-
 
     async function idxPriceSearch(id) {
         var allPrice = await JSON.parse(localStorage.getItem('idxPrice'));
