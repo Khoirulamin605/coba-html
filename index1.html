@@ -124,7 +124,18 @@
     }
 
     async function loadCoin() {
+        const urlPrice = 'https://indodax.com/api/ticker_all';
+
+        // Get data price indodax
+        var allPrice = await fetch(urlPrice)
+            .then(respPrice => respPrice.json())
+            .then(await function (data) {
+                localStorage.setItem('idxPrice', JSON.stringify(data));
+                return data;
+            })
+            .catch(err => console.log('Error Price', err))
         let data = await JSON.parse(localStorage.getItem('idxCoin'));
+
         await data.map(async function (dataParse) {
             let pair = dataParse.base_currency;
             if (pair === 'idr') {
@@ -132,10 +143,10 @@
                 let pair = dataParse.base_currency;
                 let id = dataParse.ticker_id;
                 let indodaxprice = await idxPriceSearch(id);
-                let binancePrice = await converttoIDR(await getPrizeBinance(coin));
-                let huobiPrice = await converttoIDR(await getPrizeHuobi(coin));
-                let idxBnc = await selisihIdxBncHuobi(indodaxprice, binancePrice);
-                let idxHb = await selisihIdxBncHuobi(indodaxprice, huobiPrice);
+                let binancePrice = await getPrizeBinance(coin);
+                let huobiPrice = await getPrizeHuobi(coin);
+                let idxBnc = await selisihIdxBncHuobi(indodaxprice, await converttoIDR(binancePrice));
+                let idxHb = await selisihIdxBncHuobi(indodaxprice, await converttoIDR(huobiPrice));
 
                 document.getElementById(coin + 'IDX').innerHTML = indodaxprice;
                 document.getElementById(coin + 'BNC').innerHTML = binancePrice;
@@ -163,7 +174,6 @@
     async function idxPriceSearch(id) {
         var allPrice = await JSON.parse(localStorage.getItem('idxPrice'));
         var dataPrice = await eval('allPrice.tickers.' + id);
-        // console.log(dataPrice)
         return dataPrice.last;
     }
 
