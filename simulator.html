@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body {
+            font-family: arial, sans-serif;
+        }
+
+        .title {
+            text-align: center;
+            color: #4e7548;
+        }
+    </style>
+</head>
+
+<body>
+    <h3 class="title">Kalkulator Balancer</h3>
+    <hr>
+    </hr>
+
+    <form>
+        <label for="harga_idx">Harga Indodax</label>
+        <input type="text" id="harga_idx" name="" />
+        <br /><br />
+        <label for="harga_luar">Harga Luar</label>
+        <input type="text" id="harga_luar" name="" /> <span>USDT</span>
+        <br /><br />
+        <label for="harga_beli">Harga Beli</label>
+        <input type="text" id="harga_beli" name="" /> <span>IDR</span>
+        <br /><br />
+        <input type="button" onclick="cekKoin()" value="Cek Harga" />
+    </form>
+    <br />
+    <span>Harga USDT IDX :</span>
+    <span id="harga_usdt" style="color: #4e7548;">0</span> <br>
+
+    <span>Hasil Kotor:</span>
+    <span id="hasil_tp" style="color: #4e7548;">0</span> <br>
+
+    <!-- <span>Hasil Setelah Dipotong:</span>
+    <span id="hasil_p" style="color: #4e7548;">0</span> <br> -->
+</body>
+
+<script>
+    async function cekKoin() {
+        const urlPrice = 'https://indodax.com/api/ticker_all';
+
+        let harga_idx = document.getElementById('harga_idx').value;
+        let harga_luar = document.getElementById('harga_luar').value;
+        let harga_beli = document.getElementById('harga_beli').value;
+        if (harga_idx === '' || harga_luar === '' || harga_beli === '') {
+            alert('harap isi inputan')
+        } else {
+            // Get data price indodax
+            await fetch(urlPrice)
+                .then(respPrice => respPrice.json())
+                .then(async function (data) {
+                    document.getElementById('harga_usdt').innerHTML = data.tickers.usdt_idr.last;
+                    await cekHarga(harga_idx, harga_luar, harga_beli, data.tickers.usdt_idr.last);
+                })
+                .catch(err => console.log('Error Price', err))
+
+        }
+    }
+
+    async function cekHarga(harga_idx, harga_luar, harga_beli, usdt_idr) {
+        let hasil_beli = await harga_beli / harga_idx;
+        let hasil_luar = await hasil_beli * harga_luar;
+        let rupiah = await hasil_luar * usdt_idr;
+
+        document.getElementById('hasil_tp').innerHTML = rupiah.toFixed(0);
+
+        console.log(hasil_beli)
+        console.log(hasil_luar)
+        console.log(rupiah)
+    }
+</script>
+
+</html>

@@ -129,7 +129,7 @@
         // Get data price indodax
         var allPrice = await fetch(urlPrice)
             .then(respPrice => respPrice.json())
-            .then(await function (data) {
+            .then(async function (data) {
                 localStorage.setItem('idxPrice', JSON.stringify(data));
                 return data;
             })
